@@ -1,0 +1,80 @@
+var config = {
+   
+   stop: { value: 500000, type: 'balance', label: 'stop if bet >' },
+   safeHeaven : { value: 200000, type: 'balance', label: 'Untouchable Balance' },
+   //basePayout: { value: 18, type: 'multiplier', label: 'multiplier' },
+      baseBet: { value: 100, type: 'balance', label: 'Base Bet' },
+   
+};
+
+var BBM = Math.floor(config.baseBet.value);
+var cashout = 3
+var Sn=0;
+var list =[1,2,3];
+var calc;
+var bet;
+var vl="just started";
+
+var lastGame;
+var gamecount = 0;
+var xx;
+var betCount = 0;
+
+engine.on('GAME_STARTING', onGameStarted);
+engine.on('GAME_ENDED', onGameEnded);
+
+function onGameStarted() {
+   
+if (gamecount > 0) {
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+calc = list[0]+list[list.length-1];
+bet = Math.ceil((calc*BBM)/400)*100;
+
+//console.log("list0",list[0],"listLast",list[list.length-1],calc,BBM,"bet-",bet);
+engine.bet(bet, cashout);
+betCount += 1;
+console.log(list,"  bet-",bet/100);   
+
+list.push(calc);
+Sn+=bet;
+log("betting - ",bet/100,"   Bets Total - ",Sn/100, 'Current Net Profit =', userInfo.profit/100, 'bits')
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+};
+gamecount += 1;
+};
+
+
+function onGameEnded() {
+
+lastGame = engine.history.first();
+xx = lastGame.bust;
+
+if (lastGame.cashedAt == cashout) {
+   console.log("WON");
+   if (list.length >= 6) {
+       list.shift(0);
+        list.shift(0);
+        list.pop();
+        list.pop();
+      list.pop();
+      Sn-=(bet*cashout);
+      log("WON at bet-",bet/100,"  Profit=",bet*cashout/100,"   Bets Total - ",Sn/100);
+   //   if (Sn <= 0) { list = [1,2,3]; Sn=0; betCount=0; };
+   }else {    
+       list = [1,2,3];
+       Sn=0;
+       betCount=0;
+      log("WON at bet-",bet/100,"  Profit=",bet*cashout/100,"   Bets Total - ",Sn/100);
+};}else {console.log("LOST"); log(" LOST  ");};
+   if (list.length == 1) { list = [1,2,3]; Sn=0; betCount=0; };
+
+   if ((userInfo.balance - bet) < config.safeHeaven.value) {
+    log('SafeHeaven under fire, wont bet ', bet/100, ' as stop is triggered');
+    engine.removeListener('GAME_STARTING', onGameStarted);
+    engine.removeListener('GAME_ENDED', onGameEnded);
+  }
+ 
+};
